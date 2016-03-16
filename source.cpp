@@ -7,6 +7,7 @@
 using namespace cv;
 using namespace std;
 
+//function to determine img type
 string type2str(int type) {
 	string r;
 
