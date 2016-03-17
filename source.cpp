@@ -37,14 +37,14 @@ int ballfinder(Mat& img, Mat& display, int H_low, int H_high)
 	vector<Vec3f> circles; /*This vector stores x,y and radius of the circles found with Hough Transform*/
 
 	//Apply threshold by fcn input
-	inRange(img, Scalar(H_low, 180, 30), Scalar(H_high, 255, 255), img_threshold);
+	inRange(img, Scalar(H_low, 180, 25), Scalar(H_high, 255, 255), img_threshold);
 
 	//Close threshold image
-	dilate(img_threshold, img_close, getStructuringElement(MORPH_ELLIPSE, Size(6, 6)));
+	dilate(img_threshold, img_close, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 	erode(img_close, img_close, getStructuringElement(MORPH_ELLIPSE, Size(5, 5))); /*Close?*/
 
 	//Find circles
-	HoughCircles(img_close, circles, CV_HOUGH_GRADIENT, 1, img_threshold.rows / 8, 200, 15, 0, 0);
+	HoughCircles(img_close, circles, CV_HOUGH_GRADIENT, 1, img_threshold.rows / 8, 200, 13, 0, 0);
 
 	//Draw and count circles in original
 	int count = 0;
@@ -116,7 +116,7 @@ int main(int argc, char** argv)
 	{
 		//OPTIONAL: Display image with trackbar (to search for hue limits)
 		inRange(imgHSV, Scalar(low_h, low_s, low_v), Scalar(high_h, high_s, high_v), img_r);
-		//inRange(img, Scalar(low_h, low_s, low_v), Scalar(high_h, high_s, high_v), img_r);
+		
 		imshow("Image with trackbar threshold", img_r);
 
 		//Check esc key each 30ms
@@ -128,3 +128,4 @@ int main(int argc, char** argv)
 	}
 	return 0;
 }
+
