@@ -1,3 +1,4 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <iostream>
 #include <stdio.h>
 #include "opencv2/highgui/highgui.hpp"
@@ -34,7 +35,7 @@ string type2str(int type) {
 int main(int argc, char** argv)
 {
 	Mat img, img_r, img_y, img_g, img_b, imgHSV;
-	Mat img_ye;
+	Mat img_ye, img_ye_channels;
 	int low_h, high_h, low_s, high_s, low_v, high_v;
 
 	img = imread(argv[1], 1);
@@ -68,19 +69,40 @@ int main(int argc, char** argv)
 	//			S : 30 - 250
 	//			V : 30 - 250
 
-	while (true)
-	{
+	
 		//Show output image with threshold
 		inRange(imgHSV, Scalar(low_h, low_s, low_v), Scalar(high_h, high_s, high_v), img_r);
 		imshow("Image with trackbar threshold", img_r);
 
 		//Yellow balls results
-		inRange(img, Scalar(0, 30, 30), Scalar(40, 250, 250), img_y);
-		erode(img_y, img_ye, getStructuringElement(MORPH_ELLIPSE, Size(7, 7))); /*Opening*/
-		dilate(img_ye, img_ye, getStructuringElement(MORPH_ELLIPSE, Size(7, 7)));
-		imshow("Yellow balls results", img_y);
-		imshow("Yellow balls results -- Opening", img_ye);
+		vector<Vec3f> circles; /*This vector stores x,y and radius of the circles found with Hough Transform*/
 
+		inRange(img, Scalar(0, 30, 30), Scalar(40, 250, 250), img_y);
+		imshow("Yellow balls results", img_y);
+
+		dilate(img_y, img_ye, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+		erode(img_ye, img_ye, getStructuringElement(MORPH_ELLIPSE, Size(5, 5))); /*Close?*/
+		
+
+
+		//split(img_ye, img_ye_channels);
+		HoughCircles(img_ye, circles, CV_HOUGH_GRADIENT, 1, img_ye.rows / 8, 40, 40, 0, 0); /*Hough circle detection*/
+		
+		//Draw circles
+		for (size_t i = 0; i < circles.size(); i++)
+		{
+			Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+			int radius = cvRound(circles[i][2]); /*Take the radius from circles detected*/
+			// circle center
+			circle(img, center, 3, Scalar(0, 255, 0), -1, 8, 0);
+			// circle outline
+			circle(img, center, radius, Scalar(0, 0, 255), 3, 8, 0);
+		}
+		//imshow("Yellow balls results 2", img_ye);
+		//imshow("Yellow balls results -- Opening", img);
+
+	while (true)
+	{
 		//Check esc key each 30ms
 		if (waitKey(30) == 27)
 		{
