@@ -1,4 +1,3 @@
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <iostream>
 #include <stdio.h>
 #include "opencv2/highgui/highgui.hpp"
@@ -31,42 +30,41 @@ string type2str(int type) {
 	return r;
 }
 
-void ballfinder(Mat& img, int H_low, int H_high)
+int ballfinder(Mat& img, Mat& display, int H_low, int H_high)
 {
 	Mat img_threshold, img_close;
 	vector<Vec3f> circles; /*This vector stores x,y and radius of the circles found with Hough Transform*/
 
 						   //Apply threshold by fcn input
 	inRange(img, Scalar(H_low, 30, 30), Scalar(H_high, 255, 255), img_threshold);
-	imshow("Yellow balls results", img_threshold);
 
 	//Close threshold image
 	dilate(img_threshold, img_close, getStructuringElement(MORPH_ELLIPSE, Size(7, 7)));
 	erode(img_close, img_close, getStructuringElement(MORPH_ELLIPSE, Size(10, 10))); /*Close?*/
 
-																					 //Find circles
-	HoughCircles(img_close, circles, CV_HOUGH_GRADIENT, 1, img_close.rows / 8, 200, 20, 0, 0); /*Hough circle detection*/
+	//Find circles
+	HoughCircles(img_close, circles, CV_HOUGH_GRADIENT, 1, img_close.rows / 8, 200, 20, 0, 0);
 
-																							   //Draw circles in original
+	//Draw and count circles in original
 	int count = 0;
 	for (size_t i = 0; i < circles.size(); i++)
 	{
 		Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
 		int radius = cvRound(circles[i][2]); /*Take the radius from circles detected*/
 											 // circle center
-		circle(img, center, 3, Scalar(0, 255, 0), -1, 8, 0);
+		circle(display, center, 3, Scalar(0, 255, 0), -1, 8, 0);
 		// circle outline
-		circle(img, center, radius, Scalar(0, 0, 255), 3, 8, 0);
+		circle(display, center, radius, Scalar(0, 0, 255), 3, 8, 0);
 		count++;
 	}
 
-	cout << count << " yellow balls found\n" << endl;
+	return count;
 }
 
 
 int main(int argc, char** argv)
 {
-	Mat img, img_r, img_y, img_g, img_b, imgHSV;
+	Mat img, img_r, imgHSV;
 	Mat img_ye, img_ye_channels;
 	int low_h, high_h, low_s, high_s, low_v, high_v;
 
@@ -93,22 +91,28 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	cvtColor(img, imgHSV, COLOR_BGR2GRAY);
+	cvtColor(img, imgHSV, CV_BGR2GRAY);
 
 	//AMARILLAS H : 0 - 40
 	//			S : 30 - 250
 	//			V : 30 - 250
 
 	
-	//Show output image with threshold
-	inRange(imgHSV, Scalar(low_h, low_s, low_v), Scalar(high_h, high_s, high_v), img_r);
-	//imshow("Image with trackbar threshold", img_r);
-	imshow("Circles detected", img);
+	
 
-	ballfinder(img, 1, 40);
+	//Use ballfinder to do all the work
+	int count;
+	count = ballfinder(imgHSV, img, 1, 40);
+	cout << count << " yellow balls found\n" << endl;
+	//count = ballfinder(imgHSV, img, 75, 130);
+	//cout << count << " blue balls found\n" << endl;
 
 	while (true)
 	{
+		//OPTIONAL: Display image with trackbar (to search for hue limits)
+		inRange(imgHSV, Scalar(low_h, low_s, low_v), Scalar(high_h, high_s, high_v), img_r);
+		imshow("Image with trackbar threshold", img_r);
+
 		//Check esc key each 30ms
 		if (waitKey(30) == 27)
 		{
@@ -118,3 +122,5 @@ int main(int argc, char** argv)
 	}
 	return 0;
 }
+
+
