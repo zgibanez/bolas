@@ -1,3 +1,4 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <iostream>
 #include <stdio.h>
 #include "opencv2/highgui/highgui.hpp"
@@ -91,26 +92,26 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	cvtColor(img, imgHSV, CV_BGR2GRAY);
+	cvtColor(img, imgHSV, COLOR_BGR2GRAY);
 
 	//AMARILLAS H : 0 - 40
 	//			S : 30 - 250
 	//			V : 30 - 250
 
 	
-	
-
 	//Use ballfinder to do all the work
 	int count;
-	count = ballfinder(imgHSV, img, 1, 40);
+	count = ballfinder(imgHSV, img, 1, 50);
 	cout << count << " yellow balls found\n" << endl;
-	//count = ballfinder(imgHSV, img, 75, 130);
-	//cout << count << " blue balls found\n" << endl;
+	count = ballfinder(imgHSV, img, 75, 120);
+	cout << count << " blue balls found\n" << endl;
+	imshow("Circles detected", img);
 
 	while (true)
 	{
 		//OPTIONAL: Display image with trackbar (to search for hue limits)
 		inRange(imgHSV, Scalar(low_h, low_s, low_v), Scalar(high_h, high_s, high_v), img_r);
+		//inRange(img, Scalar(low_h, low_s, low_v), Scalar(high_h, high_s, high_v), img_r);
 		imshow("Image with trackbar threshold", img_r);
 
 		//Check esc key each 30ms
@@ -122,5 +123,4 @@ int main(int argc, char** argv)
 	}
 	return 0;
 }
-
 
