@@ -7,7 +7,6 @@
 using namespace cv;
 using namespace std;
 
-//function to determine img type
 string type2str(int type) {
 	string r;
 
@@ -34,11 +33,13 @@ string type2str(int type) {
 
 int main(int argc, char** argv)
 {
-	Mat img, img_r, img_g, img_b, imgHSV;
+	Mat img, img_r, img_y, img_g, img_b, imgHSV;
+	Mat img_ye;
 	int low_h, high_h, low_s, high_s, low_v, high_v;
 
 	img = imread(argv[1], 1);
 
+	//Determine img.type() (For Debug)
 	string ty = type2str(img.type());
 	printf("Matrix: %s %dx%d \n", ty.c_str(), img.cols, img.rows);
 
@@ -63,11 +64,22 @@ int main(int argc, char** argv)
 
 	cvtColor(img, imgHSV, COLOR_BGR2GRAY);
 
+	//AMARILLAS H : 0 - 40
+	//			S : 30 - 250
+	//			V : 30 - 250
+
 	while (true)
 	{
 		//Show output image with threshold
-		inRange(img, Scalar(low_h, low_s, low_v), Scalar(high_h, high_s, high_v), img_r);
-		imshow("Image with threshold", img_r);
+		inRange(imgHSV, Scalar(low_h, low_s, low_v), Scalar(high_h, high_s, high_v), img_r);
+		imshow("Image with trackbar threshold", img_r);
+
+		//Yellow balls results
+		inRange(img, Scalar(0, 30, 30), Scalar(40, 250, 250), img_y);
+		erode(img_y, img_ye, getStructuringElement(MORPH_ELLIPSE, Size(7, 7))); /*Opening*/
+		dilate(img_ye, img_ye, getStructuringElement(MORPH_ELLIPSE, Size(7, 7)));
+		imshow("Yellow balls results", img_y);
+		imshow("Yellow balls results -- Opening", img_ye);
 
 		//Check esc key each 30ms
 		if (waitKey(30) == 27)
