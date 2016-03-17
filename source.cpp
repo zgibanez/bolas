@@ -36,15 +36,15 @@ int ballfinder(Mat& img, Mat& display, int H_low, int H_high)
 	Mat img_threshold, img_close;
 	vector<Vec3f> circles; /*This vector stores x,y and radius of the circles found with Hough Transform*/
 
-						   //Apply threshold by fcn input
-	inRange(img, Scalar(H_low, 30, 30), Scalar(H_high, 255, 255), img_threshold);
+	//Apply threshold by fcn input
+	inRange(img, Scalar(H_low, 180, 30), Scalar(H_high, 255, 255), img_threshold);
 
 	//Close threshold image
-	dilate(img_threshold, img_close, getStructuringElement(MORPH_ELLIPSE, Size(7, 7)));
-	erode(img_close, img_close, getStructuringElement(MORPH_ELLIPSE, Size(10, 10))); /*Close?*/
+	dilate(img_threshold, img_close, getStructuringElement(MORPH_ELLIPSE, Size(6, 6)));
+	erode(img_close, img_close, getStructuringElement(MORPH_ELLIPSE, Size(5, 5))); /*Close?*/
 
 	//Find circles
-	HoughCircles(img_close, circles, CV_HOUGH_GRADIENT, 1, img_close.rows / 8, 200, 20, 0, 0);
+	HoughCircles(img_close, circles, CV_HOUGH_GRADIENT, 1, img_threshold.rows / 8, 200, 15, 0, 0);
 
 	//Draw and count circles in original
 	int count = 0;
@@ -67,7 +67,7 @@ int main(int argc, char** argv)
 {
 	Mat img, img_r, imgHSV;
 	Mat img_ye, img_ye_channels;
-	int low_h, high_h, low_s, high_s, low_v, high_v;
+	int low_h=0, high_h=250, low_s=0, high_s=250, low_v=0, high_v=250;
 
 	img = imread(argv[1], 1);
 
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	cvtColor(img, imgHSV, COLOR_BGR2GRAY);
+	cvtColor(img, imgHSV, CV_BGR2HSV);
 
 	//AMARILLAS H : 0 - 40
 	//			S : 30 - 250
@@ -101,11 +101,16 @@ int main(int argc, char** argv)
 	
 	//Use ballfinder to do all the work
 	int count;
-	count = ballfinder(imgHSV, img, 1, 50);
-	cout << count << " yellow balls found\n" << endl;
-	count = ballfinder(imgHSV, img, 75, 120);
-	cout << count << " blue balls found\n" << endl;
-	imshow("Circles detected", img);
+	count = ballfinder(imgHSV, img, 20, 50);
+	cout << count << " yellow ball(s) found\n" << endl;
+	count = ballfinder(imgHSV, img, 100, 165);		  //dark blue + purplish 
+	count = count + ballfinder(imgHSV, img, 80, 100); //light blue
+	cout << count << " blue ball(s) found\n" << endl;
+	count = ballfinder(imgHSV, img, 60, 70);
+	cout << count << " green ball(s) found\n" << endl;
+	count = ballfinder(imgHSV, img, 0, 25);
+	cout << count << " red ball(s) found\n" << endl;
+	imshow("Original with detected", img);
 
 	while (true)
 	{
@@ -123,4 +128,3 @@ int main(int argc, char** argv)
 	}
 	return 0;
 }
-
