@@ -31,6 +31,38 @@ string type2str(int type) {
 	return r;
 }
 
+void ballfinder(Mat& img, int H_low, int H_high)
+{
+	Mat img_threshold, img_close;
+	vector<Vec3f> circles; /*This vector stores x,y and radius of the circles found with Hough Transform*/
+
+						   //Apply threshold by fcn input
+	inRange(img, Scalar(H_low, 30, 30), Scalar(H_high, 255, 255), img_threshold);
+	imshow("Yellow balls results", img_threshold);
+
+	//Close threshold image
+	dilate(img_threshold, img_close, getStructuringElement(MORPH_ELLIPSE, Size(7, 7)));
+	erode(img_close, img_close, getStructuringElement(MORPH_ELLIPSE, Size(10, 10))); /*Close?*/
+
+																					 //Find circles
+	HoughCircles(img_close, circles, CV_HOUGH_GRADIENT, 1, img_close.rows / 8, 200, 20, 0, 0); /*Hough circle detection*/
+
+																							   //Draw circles in original
+	int count = 0;
+	for (size_t i = 0; i < circles.size(); i++)
+	{
+		Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+		int radius = cvRound(circles[i][2]); /*Take the radius from circles detected*/
+											 // circle center
+		circle(img, center, 3, Scalar(0, 255, 0), -1, 8, 0);
+		// circle outline
+		circle(img, center, radius, Scalar(0, 0, 255), 3, 8, 0);
+		count++;
+	}
+
+	cout << count << " yellow balls found\n" << endl;
+}
+
 
 int main(int argc, char** argv)
 {
@@ -43,8 +75,6 @@ int main(int argc, char** argv)
 	//Determine img.type() (For Debug)
 	string ty = type2str(img.type());
 	printf("Matrix: %s %dx%d \n", ty.c_str(), img.cols, img.rows);
-
-	
 
 	//Create window with trackbar
 	namedWindow("Control", CV_WINDOW_NORMAL);
@@ -70,36 +100,12 @@ int main(int argc, char** argv)
 	//			V : 30 - 250
 
 	
-		//Show output image with threshold
-		inRange(imgHSV, Scalar(low_h, low_s, low_v), Scalar(high_h, high_s, high_v), img_r);
-		imshow("Image with trackbar threshold", img_r);
+	//Show output image with threshold
+	inRange(imgHSV, Scalar(low_h, low_s, low_v), Scalar(high_h, high_s, high_v), img_r);
+	//imshow("Image with trackbar threshold", img_r);
+	imshow("Circles detected", img);
 
-		//Yellow balls results
-		vector<Vec3f> circles; /*This vector stores x,y and radius of the circles found with Hough Transform*/
-
-		inRange(img, Scalar(0, 30, 30), Scalar(40, 250, 250), img_y);
-		imshow("Yellow balls results", img_y);
-
-		dilate(img_y, img_ye, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
-		erode(img_ye, img_ye, getStructuringElement(MORPH_ELLIPSE, Size(5, 5))); /*Close?*/
-		
-
-
-		//split(img_ye, img_ye_channels);
-		HoughCircles(img_ye, circles, CV_HOUGH_GRADIENT, 1, img_ye.rows / 8, 40, 40, 0, 0); /*Hough circle detection*/
-		
-		//Draw circles
-		for (size_t i = 0; i < circles.size(); i++)
-		{
-			Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
-			int radius = cvRound(circles[i][2]); /*Take the radius from circles detected*/
-			// circle center
-			circle(img, center, 3, Scalar(0, 255, 0), -1, 8, 0);
-			// circle outline
-			circle(img, center, radius, Scalar(0, 0, 255), 3, 8, 0);
-		}
-		//imshow("Yellow balls results 2", img_ye);
-		//imshow("Yellow balls results -- Opening", img);
+	ballfinder(img, 1, 40);
 
 	while (true)
 	{
