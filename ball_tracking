@@ -4,6 +4,13 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/opencv.hpp"
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include <iostream>
+#include <stdio.h>
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/opencv.hpp"
+
 using namespace cv;
 using namespace std;
 
@@ -17,11 +24,12 @@ void ballfinder(Mat& img, Mat& display, int H_low, int H_high)
 	inRange(img, Scalar(H_low, 180, 25), Scalar(H_high, 255, 255), img_threshold);
 
 	//Close threshold image
-	//dilate(img_threshold, img_close, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
-	//erode(img_close, img_close, getStructuringElement(MORPH_ELLIPSE, Size(5, 5))); /*Close?*/
+	dilate(img_threshold, img_close, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+	erode(img_close, img_close, getStructuringElement(MORPH_ELLIPSE, Size(3, 3))); /*Close?*/
+	//imshow("closed", img_close);
 
-																				   //Find circles
-	HoughCircles(img_threshold, circles, CV_HOUGH_GRADIENT, 1, img_threshold.rows / 8, 200, 20, 0, 0);
+	//Find circles
+	HoughCircles(img_close, circles, CV_HOUGH_GRADIENT, 1, img_threshold.rows / 8, 200, 15, 0, 0);
 
 	//Draw and count circles in original
 	for (size_t i = 0; i < circles.size(); i++)
@@ -77,6 +85,8 @@ int main(int argc, char** argv)
 		capture >> frame;
 		if (frame.empty())
 			break;
+
+		blur(frame, frame, Size(5, 5));
 
 		//transform video frame into something else
 		cvtColor(frame, frameHSV, COLOR_BGR2HSV);
