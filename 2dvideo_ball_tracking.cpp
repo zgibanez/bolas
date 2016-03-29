@@ -49,8 +49,7 @@ int main(int argc, char** argv)
 	Mat frame, frameHSV;
 	Mat frame_copy; /*Initial window*/
 	Mat roi, hsv_roi, mask; /*region of interest*/
-	Mat roi_hist, img_hist;
-	Mat img_track;
+	Mat roi_hist, img_backproj;
 
 
 	VideoCapture capture("C:/images/2dball.mp4"); //CHANGE
@@ -114,8 +113,8 @@ int main(int argc, char** argv)
 	int hbins = 30, sbins = 30;
 	int ch[] = { 0,0 };
 	int histSize[] = { hbins, sbins }; /*Numero de valores de histograma*/
-	float hranges[] = { 0, 179 };	   /*Hue - 0-180*/
-	float sranges[] = { 0, 255 };	   /*Saturation  0-256*/
+	float hranges[] = { 0, 180 };	   /*Hue - 0-180*/
+	float sranges[] = { 0, 256 };	   /*Saturation  0-256*/
 	const float* ranges[] = { hranges, sranges };
 
 	cvtColor(roi, hsv_roi, COLOR_BGR2HSV);
@@ -139,12 +138,12 @@ int main(int argc, char** argv)
 		cvtColor(frame, frameHSV, COLOR_BGR2HSV);
 
 		//Apply criteria, set calcBackProject and calculate meanShift
-		TermCriteria  term_crit(CV_TERMCRIT_EPS|CV_TERMCRIT_NUMBER , 100, 2);
-		calcBackProject(&frameHSV, 1, ch, roi_hist, img_hist, ranges, 1, true);
-		meanShift(img_hist, track_window, term_crit);
+		TermCriteria  term_crit(CV_TERMCRIT_EPS|CV_TERMCRIT_NUMBER , 100, 1);
+		calcBackProject(&frameHSV, 1, ch, roi_hist, img_backproj, ranges, 1, true);
+		meanShift(img_backproj, track_window, term_crit);
 
 	    rectangle(frameHSV, track_window, Scalar(0, 255, 255), 3, 8, 0);
-		imshow("detection", frame);
+		imshow("detection", frameHSV);
 
 		////////////////OUTPUT////////////////
 		/*//copy the transformed frame to output
