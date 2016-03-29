@@ -46,17 +46,17 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata)
 
 int main(int argc, char** argv)
 {
-	Mat frame, frameHSV, frame_threshold, transformed;
+	Mat frame, frameHSV;
 	Mat frame_copy; /*Initial window*/
 	Mat roi, hsv_roi, mask; /*region of interest*/
 	Mat roi_hist, img_hist;
+	Mat img_track;
 
 
 	VideoCapture capture("C:/images/2dball.mp4"); //CHANGE
-
-
 	if (!capture.isOpened())
 		throw "Error when reading video";
+
 	/* /////////////////OUTPUT////////////
 	//Preparing output:
 	VideoWriter output;
@@ -68,9 +68,8 @@ int main(int argc, char** argv)
 	output = VideoWriter(filename, fcc, fps, frameSize);
 	/////////////////OUTPUT////////////*/
 
-	namedWindow("w", 1);
 
-	//select region with mouse
+	///////// MOUSE //////////
 	capture >> frame;
 	frame.copyTo(frame_copy);
 	imshow("Initialize", frame_copy);
@@ -104,6 +103,9 @@ int main(int argc, char** argv)
 
 	p_fin.x = p_ini.x + abs(P1.x - P2.x);
 	p_fin.y = p_ini.y + abs(P1.y - P2.y);
+	///////// FIN MOUSE //////////
+
+
 
 	//Preparación de la ROI
 	Rect track_window(p_ini.x, p_ini.y, abs(p_ini.x - p_fin.x), abs(p_ini.y - p_fin.y));
@@ -117,7 +119,7 @@ int main(int argc, char** argv)
 	const float* ranges[] = { hranges, sranges };
 
 	cvtColor(roi, hsv_roi, COLOR_BGR2HSV);
-	inRange(hsv_roi,Scalar(100, 0, 0), Scalar(255, 20, 20), mask);
+	inRange(hsv_roi,Scalar(100, 0, 0), Scalar(255, 50, 50), mask); /*Creo una máscara para elimiar el verde y azul*/
 	calcHist(&hsv_roi, 1, ch, mask, roi_hist, 2, histSize, ranges, true, false);
     normalize(roi_hist, roi_hist, (0,0), 255, NORM_MINMAX, -1, Mat()); //atencion - sin máscara
 
@@ -137,15 +139,12 @@ int main(int argc, char** argv)
 		cvtColor(frame, frameHSV, COLOR_BGR2HSV);
 
 		//Apply criteria, set calcBackProject and calculate meanShift
-		TermCriteria  term_crit = TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_NUMBER, 10, 1);
+		TermCriteria  term_crit(CV_TERMCRIT_EPS|CV_TERMCRIT_NUMBER , 100, 2);
 		calcBackProject(&frameHSV, 1, ch, roi_hist, img_hist, ranges, 1, true);
 		meanShift(img_hist, track_window, term_crit);
 
-
-
-		rectangle(frameHSV, , , Scalar(0, 255, 255), 1, 8, 0);
-
-		imshow("detection", frameHSV);
+	    rectangle(frameHSV, track_window, Scalar(0, 255, 255), 3, 8, 0);
+		imshow("detection", frame);
 
 		////////////////OUTPUT////////////////
 		/*//copy the transformed frame to output
