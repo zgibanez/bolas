@@ -4,8 +4,8 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/opencv.hpp"
-#define DEBUG 1 //0 - VIDEO ININTERRUMPIDO, 1 - VIDEO FRAME A FRAME
-#define MEANSHIFT 0  //0 - MEANSHIFT 1 - CAMSHIFT
+#define DEBUG 0 //0 - VIDEO ININTERRUMPIDO, 1 - VIDEO FRAME A FRAME
+#define MEANSHIFT 1  //0 - CAMSHIFT 1 - MEANSHIFT
 
 using namespace cv;
 using namespace std;
@@ -14,40 +14,35 @@ using namespace std;
 bool click=false;
 Point P1, P2;
 
-void CallBackFunc(int event, int x, int y, int flags, void* reset)
+void CallBackFunc(int event, int x, int y, int flags, void* reset);
+
+/*Function to draw ball*/
+void ballfinder(Mat& img, Mat& display, int x_window, int y_window, int H_low, int H_high)
 {
-	switch (event) {
-	case EVENT_LBUTTONDOWN:
+	Mat img_threshold, img_close;
+	vector<Vec3f> circles; /*This vector stores x,y and radius of the circles found with Hough Transform*/
+	
+    //Apply threshold by fcn input
+	inRange(img, Scalar(H_low, 0, 0), Scalar(H_high, 255, 255), img_threshold);
 
-		cout << "Left button pressed" << endl;
-		if (!click) {
-			click = true;
-			P1.x = x;
-			P1.y = y;
-			P2.x = x;
-			P2.y = y;
-		}
+	//Close threshold image
+	erode(img_threshold, img_close, getStructuringElement(MORPH_ELLIPSE, Size(8, 8))); /*Close?*/
+	dilate(img_close, img_close, getStructuringElement(MORPH_ELLIPSE, Size(6, 6)));
+	imshow("tracked ROI", img_close);
 
-		break;
+	//Find circles
+	HoughCircles(img_threshold, circles, CV_HOUGH_GRADIENT, 1, img_threshold.rows / 8, 200, 30, 0, 0);
 
-	case EVENT_MOUSEMOVE:
-		if (click) {
-		P2.x = x;
-		P2.y = y;
-		}
-		break;
+	//Draw and count circles in original
+	for (size_t i = 0; i < circles.size(); i++)
+	{
+		Point center(cvRound(circles[i][0])+x_window, cvRound(circles[i][1]+y_window));
+		int radius = cvRound(circles[i][2]); /*Take the radius from circles detected*/
+											 // circle center
+		circle(display, center, 3, Scalar(255, 255, 255), -1, 8, 0);
+		// circle outline
+		circle(display, center, radius, Scalar(0, 0, 255), 3, 8, 0);
 
-	case EVENT_LBUTTONUP:
-		cout << "Left button released" << endl;
-		if (click) {
-			P2.x = x;
-			P2.y = y;
-			click = false;
-		}
-		break;
-
-	default:
-		break;
 	}
 
 }
@@ -157,15 +152,11 @@ int main(int argc, char** argv)
 		calcBackProject(&frameHSV, 1, ch, roi_hist, img_backproj, ranges, 1, true);
 
 
+		//Set calcBackProject and calculate meanShift/CamShift
 		if (MEANSHIFT) {
-			//Apply criteria, set calcBackProject and calculate meanShift
 			meanShift(img_backproj, track_window, term_crit);
 			rectangle(frame, track_window, Scalar(0, 255, 255), 3, 8, 0);
-			frame_crop = frame(track_window);
-
-			//Calculate threshold
-			//threshold(frame.channels[0], frame_copy, thresh, 60, THRESH_BINARY);
-			//findContours(threshold_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
+			//ballfinder(frame(track_window), frame, track_window.x, track_window.y, 0, 15);
 		}
 		else {
 			camshift_track_window = CamShift(img_backproj, track_window, term_crit);
@@ -181,6 +172,8 @@ int main(int argc, char** argv)
 		output.write(transformed);*/
 		//////////////////////////////////////
 		if (DEBUG) key = waitKey(-1);
+		else key = waitKey(30);
+
 		if (key == 27)
 		{
 			cout << "ESC key pressed" << endl;
@@ -191,4 +184,43 @@ int main(int argc, char** argv)
 	capture.release();
 	//output.release();
 	return 0;
+}
+
+
+void CallBackFunc(int event, int x, int y, int flags, void* reset)
+{
+	switch (event) {
+	case EVENT_LBUTTONDOWN:
+
+		cout << "Left button pressed" << endl;
+		if (!click) {
+			click = true;
+			P1.x = x;
+			P1.y = y;
+			P2.x = x;
+			P2.y = y;
+		}
+
+		break;
+
+	case EVENT_MOUSEMOVE:
+		if (click) {
+			P2.x = x;
+			P2.y = y;
+		}
+		break;
+
+	case EVENT_LBUTTONUP:
+		cout << "Left button released" << endl;
+		if (click) {
+			P2.x = x;
+			P2.y = y;
+			click = false;
+		}
+		break;
+
+	default:
+		break;
+	}
+
 }
