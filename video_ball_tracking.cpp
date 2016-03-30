@@ -31,17 +31,17 @@ void ballfinder(Mat& img, Mat& display, int x_window, int y_window, int H_low, i
 	imshow("tracked ROI", img_close);
 
 	//Find circles
-	HoughCircles(img_threshold, circles, CV_HOUGH_GRADIENT, 1, img_threshold.rows / 8, 200, 30, 0, 0);
+	HoughCircles(img_close, circles, CV_HOUGH_GRADIENT, 1, img_threshold.rows / 8, 200, 20, 0, 0);
 
-	//Draw and count circles in original
+		//Draw and count circles in original
 	for (size_t i = 0; i < circles.size(); i++)
 	{
-		Point center(cvRound(circles[i][0])+x_window, cvRound(circles[i][1]+y_window));
-		int radius = cvRound(circles[i][2]); /*Take the radius from circles detected*/
-											 // circle center
-		circle(display, center, 3, Scalar(255, 255, 255), -1, 8, 0);
-		// circle outline
-		circle(display, center, radius, Scalar(0, 0, 255), 3, 8, 0);
+			Point center(cvRound(circles[i][0]) + x_window, cvRound(circles[i][1]) + y_window);
+			int radius = cvRound(circles[i][2]); /*Take the radius from circles detected*/
+												 // circle center
+			circle(display, center, 3, Scalar(255, 255, 255), -1, 8, 0);
+			// circle outline
+			circle(display, center, radius, Scalar(0, 0, 255), 3, 8, 0);
 
 	}
 
@@ -120,11 +120,6 @@ int main(int argc, char** argv)
 	Point2f pts[4];
 	TermCriteria  term_crit(CV_TERMCRIT_EPS | CV_TERMCRIT_NUMBER, 100, 1);
 	
-	//For contours
-	Mat threshold_output;
-	double thresh; /*Threshold for drawing contour of ROI*/
-	vector<vector<Point> > contours;
-	vector<Vec4i> hierarchy;
 	
 	//For histogram
 	int hbins = 30;
@@ -140,7 +135,7 @@ int main(int argc, char** argv)
     normalize(roi_hist, roi_hist, 255, 0, NORM_MINMAX, -1, noArray()); //atencion - sin máscara
 
 
-	for (; ; )
+	for (; ;)
 	{
 		capture >> frame;
 		if (frame.empty())
@@ -156,13 +151,14 @@ int main(int argc, char** argv)
 		if (MEANSHIFT) {
 			meanShift(img_backproj, track_window, term_crit);
 			rectangle(frame, track_window, Scalar(0, 255, 255), 3, 8, 0);
-			//ballfinder(frame(track_window), frame, track_window.x, track_window.y, 0, 15);
+			ballfinder(frame(track_window), frame, track_window.x, track_window.y, 0, 15);
 		}
 		else {
 			camshift_track_window = CamShift(img_backproj, track_window, term_crit);
 			camshift_track_window.points(pts);
 			for (int i = 0; i < 4; i++)
 				line(frame, pts[i], pts[(i + 1) % 4], Scalar(0, 255, 0),3,8,0);
+			ballfinder(frame(track_window), frame, pts[1].x, pts[1].y, 0, 15);
 			}
 
 		imshow("detection", frame);
