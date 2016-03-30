@@ -106,21 +106,22 @@ int main(int argc, char** argv)
 
 
 
-	//Preparación de la ROI
+	//Preparación de la ROI: NOTA, ANTES TENIA SATURACION
 	Rect track_window(p_ini.x, p_ini.y, abs(p_ini.x - p_fin.x), abs(p_ini.y - p_fin.y));
 	roi = frame(track_window);
 	
 	int hbins = 30, sbins = 30;
-	int ch[] = { 0,0 };
-	int histSize[] = { hbins, sbins }; /*Numero de valores de histograma*/
+	int ch[] = {0};
+	int histSize[] = { hbins}; /*Numero de valores de histograma*/
 	float hranges[] = { 0, 180 };	   /*Hue - 0-180*/
-	float sranges[] = { 0, 256 };	   /*Saturation  0-256*/
-	const float* ranges[] = { hranges, sranges };
+	//float sranges[] = { 0, 256 };	   /*Saturation  0-256*/
+	//const float* ranges[] = { hranges, sranges };
+	const float* ranges[] = { hranges };
 
 	cvtColor(roi, hsv_roi, COLOR_BGR2HSV);
-	inRange(hsv_roi,Scalar(100, 0, 0), Scalar(255, 50, 50), mask); /*Creo una máscara para elimiar el verde y azul*/
-	calcHist(&hsv_roi, 1, ch, mask, roi_hist, 2, histSize, ranges, true, false);
-    normalize(roi_hist, roi_hist, (0,0), 255, NORM_MINMAX, -1, Mat()); //atencion - sin máscara
+	inRange(hsv_roi,Scalar(0, 60, 30), Scalar(60, 255, 255), mask);
+	calcHist(&hsv_roi, 1, ch, mask, roi_hist, 1, histSize, ranges, true, false);
+    normalize(roi_hist, roi_hist, 255, 0, NORM_MINMAX, -1, noArray()); //atencion - sin máscara
 
 	if (DEBUG) {
 		cout << roi_hist.rows << "  Rows" << endl;
@@ -142,8 +143,8 @@ int main(int argc, char** argv)
 		calcBackProject(&frameHSV, 1, ch, roi_hist, img_backproj, ranges, 1, true);
 		meanShift(img_backproj, track_window, term_crit);
 
-	    rectangle(frameHSV, track_window, Scalar(0, 255, 255), 3, 8, 0);
-		imshow("detection", frameHSV);
+	    rectangle(frame, track_window, Scalar(0, 255, 255), 3, 8, 0);
+		imshow("detection", frame);
 
 		////////////////OUTPUT////////////////
 		/*//copy the transformed frame to output
@@ -152,7 +153,7 @@ int main(int argc, char** argv)
 
 		if (waitKey(30) == 27)
 		{
-			cout << "esc key is pressed by user" << endl;
+			cout << "ESC key pressed" << endl;
 			break;
 		}
 	}
