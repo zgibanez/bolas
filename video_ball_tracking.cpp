@@ -163,7 +163,6 @@ int main(int argc, char** argv)
 				camshift_track_window.size.width = frame.cols;
 				camshift_track_window.angle = 0;
 				camshift_track_window.center = Point(frame.cols / 2, frame.rows / 2);
-
 				if (DEBUG) cout << "Track window dimensions were 0x0. Track window size readjusted to whole frame." << endl;
 			}
 			
@@ -173,7 +172,7 @@ int main(int argc, char** argv)
 			for (int i = 0; i < 4; i++) {
 				line(frame, pts[i], pts[(i + 1) % 4], Scalar(0, 255, 0), 3, 8, 0);
 			}
-			}
+		}
 
 		imshow("detection", frame);
 
