@@ -5,7 +5,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/opencv.hpp"
 #define DEBUG 1 //0 - VIDEO ININTERRUMPIDO, 1 - VIDEO FRAME A FRAME
-#define MEANSHIFT 0  //0 - CAMSHIFT, 1 - MEANSHIFT
+#define MEANSHIFT 1  //0 - CAMSHIFT, 1 - MEANSHIFT
 
 using namespace cv;
 using namespace std;
@@ -153,7 +153,7 @@ int main(int argc, char** argv)
 				if (DEBUG) cout << "Track window dimensions were 0x0. Track window size readjusted to whole frame." << endl;
 			}
 			rectangle(frame, track_window, Scalar(0, 255, 255), 3, 8, 0);
-			ballfinder(frame(track_window), frame, track_window.x, track_window.y);
+			ballfinder(frameHSV(track_window), frame, track_window.x, track_window.y);
 		}
 		else {
 			camshift_track_window = CamShift(img_backproj, track_window, term_crit);
