@@ -4,8 +4,8 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/opencv.hpp"
-#define DEBUG 0 //0 - VIDEO ININTERRUMPIDO, 1 - VIDEO FRAME A FRAME
-#define MEANSHIFT 1  //0 - CAMSHIFT 1 - MEANSHIFT
+#define DEBUG 1 //0 - VIDEO ININTERRUMPIDO, 1 - VIDEO FRAME A FRAME
+#define MEANSHIFT 0  //0 - CAMSHIFT, 1 - MEANSHIFT
 
 using namespace cv;
 using namespace std;
@@ -17,23 +17,20 @@ Point P1, P2;
 void CallBackFunc(int event, int x, int y, int flags, void* reset);
 
 /*Function to draw ball*/
-void ballfinder(Mat& img, Mat& display, int x_window, int y_window, int H_low, int H_high)
+void ballfinder(Mat& img, Mat& display, int x_window, int y_window, int angle = 0)
 {
 	Mat img_threshold, img_close;
 	vector<Vec3f> circles; /*This vector stores x,y and radius of the circles found with Hough Transform*/
-	
-    //Apply threshold by fcn input
-	inRange(img, Scalar(H_low, 0, 0), Scalar(H_high, 255, 255), img_threshold);
 
 	//Close threshold image
-	erode(img_threshold, img_close, getStructuringElement(MORPH_ELLIPSE, Size(8, 8))); /*Close?*/
-	dilate(img_close, img_close, getStructuringElement(MORPH_ELLIPSE, Size(6, 6)));
-	imshow("tracked ROI", img_close);
+	imshow("tracked ROI", img);
 
 	//Find circles
-	HoughCircles(img_close, circles, CV_HOUGH_GRADIENT, 1, img_threshold.rows / 8, 200, 20, 0, 0);
+	cout << "Track window dim: " << img.cols << " x " << img.rows <<endl;
+	HoughCircles(img, circles, CV_HOUGH_GRADIENT, 1, img.rows, 200, 20, 0, 0);
 
 		//Draw and count circles in original
+		//Note: angle added for rotated Rect
 	for (size_t i = 0; i < circles.size(); i++)
 	{
 			Point center(cvRound(circles[i][0]) + x_window, cvRound(circles[i][1]) + y_window);
@@ -100,7 +97,7 @@ int main(int argc, char** argv)
 		else if (key == -1) frame.copyTo(frame_copy);
 	}
 
-	//Ajuste de direcciones de ventana por cuadrante
+	//Reordenación de las esquinas de ventana por cuadrante
 	Point p_ini, p_fin;
 	if (P2.x < P1.x) p_ini.x = P2.x;
 	else p_ini.x = P1.x;
@@ -130,7 +127,7 @@ int main(int argc, char** argv)
 
 	roi = frame(track_window);
 	cvtColor(roi, hsv_roi, COLOR_BGR2HSV);
-	inRange(hsv_roi,Scalar(0, 60, 30), Scalar(60, 255, 255), mask);
+	inRange(hsv_roi,Scalar(0,55, 12), Scalar(15, 255, 143), mask);
 	calcHist(&hsv_roi, 1, ch, mask, roi_hist, 1, histSize, ranges, true, false);
     normalize(roi_hist, roi_hist, 255, 0, NORM_MINMAX, -1, noArray()); //atencion - sin máscara
 
@@ -144,21 +141,38 @@ int main(int argc, char** argv)
 
 		//transform video frame to HSV
 		cvtColor(frame, frameHSV, COLOR_BGR2HSV);
+		inRange(frameHSV, Scalar(0, 55, 12), Scalar(15, 255, 143), frameHSV);
 		calcBackProject(&frameHSV, 1, ch, roi_hist, img_backproj, ranges, 1, true);
 
 
 		//Set calcBackProject and calculate meanShift/CamShift
 		if (MEANSHIFT) {
 			meanShift(img_backproj, track_window, term_crit);
+			if (track_window.height == 0 && track_window.width == 0) {
+				track_window = Rect(Point(0,0), Point(frame.cols,frame.rows));
+				if (DEBUG) cout << "Track window dimensions were 0x0. Track window size readjusted to whole frame." << endl;
+			}
 			rectangle(frame, track_window, Scalar(0, 255, 255), 3, 8, 0);
-			ballfinder(frame(track_window), frame, track_window.x, track_window.y, 0, 15);
+			ballfinder(frame(track_window), frame, track_window.x, track_window.y);
 		}
 		else {
 			camshift_track_window = CamShift(img_backproj, track_window, term_crit);
+			//Truco de javi
+			if (camshift_track_window.size.height == 0 && camshift_track_window.size.width == 0) {
+				camshift_track_window.size.height = frame.rows;
+				camshift_track_window.size.width = frame.cols;
+				camshift_track_window.angle = 0;
+				camshift_track_window.center = Point(frame.cols / 2, frame.rows / 2);
+
+				if (DEBUG) cout << "Track window dimensions were 0x0. Track window size readjusted to whole frame." << endl;
+			}
+			
 			camshift_track_window.points(pts);
-			for (int i = 0; i < 4; i++)
-				line(frame, pts[i], pts[(i + 1) % 4], Scalar(0, 255, 0),3,8,0);
-			ballfinder(frame(track_window), frame, pts[1].x, pts[1].y, 0, 15);
+			if (DEBUG) cout << "Track up-left corner: (" << pts[1].x << " , " << pts[1].y << " )" << endl;
+			ballfinder(frameHSV(track_window), frame, pts[1].x, pts[1].y);
+			for (int i = 0; i < 4; i++) {
+				line(frame, pts[i], pts[(i + 1) % 4], Scalar(0, 255, 0), 3, 8, 0);
+			}
 			}
 
 		imshow("detection", frame);
@@ -181,6 +195,7 @@ int main(int argc, char** argv)
 	//output.release();
 	return 0;
 }
+
 
 
 void CallBackFunc(int event, int x, int y, int flags, void* reset)
