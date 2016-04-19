@@ -28,7 +28,7 @@ int main(int argc, char** argv)
 	inRange(original, Scalar(0,0,100), Scalar(255,255,255),thresh);
 
 	//find contours on image
-	findContours(thresh.clone(), cnts, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+	findContours(thresh.clone(), cnts, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
 	cout << cnts.size() << endl;
 
 	//approximate contours
@@ -42,13 +42,13 @@ int main(int argc, char** argv)
 		//find center of contour
 		Moments M; float cX, cY;
 		M = moments(cnts[i]);
-		cX = M.m01/M.m00;
-		cY = M.m10/M.m00;
+		cX = M.m10/M.m00;
+		cY = M.m01/M.m00;
 
 		//find which shape fits best and
 		//write it on img
 		strcpy_s(shape,detect(poligon, original));
-		putText(original, shape, Point(cX, cY), FONT_HERSHEY_SIMPLEX, 1, Scalar(255, 255, 255));
+		putText(original, shape, Point(cX, cY), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(255, 255, 255));
 
 	}
 
@@ -63,11 +63,12 @@ int main(int argc, char** argv)
 char* detect(vector<Point> poligon, Mat display)
 {
 
-	/*if (poligon.size() == 3)
-
+	if (poligon.size() == 3)
+		return "triangle";
 	if (poligon.size() == 4)
+		return "square";
+	if (poligon.size() > 5)
+		return "circle"; //crimen
 
-	if (poligon.size() > 5)*/
-
-	return "triangle";
+	
 }
